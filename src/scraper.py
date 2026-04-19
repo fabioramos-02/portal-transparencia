@@ -38,7 +38,7 @@ def agrupar_por_orgao(buscas):
 
 async def selecionar_orgao_se_necessario(page, orgao, last_organ):
     if orgao == last_organ:
-        print(f"  [CACHE] Órgão '{orgao}' já selecionado, pulando Select2.")
+        # print(f"  [CACHE] Órgão '{orgao}' já selecionado, pulando Select2.")
         return last_organ
 
     # Limpar seleção anterior
