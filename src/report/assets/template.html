@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório de Servidores — Transparência MS</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>__CSS__</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="topbar-title">Portal Transparência MS</div>
+      <div class="topbar-sub">Relatório Executivo de Servidores</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-date">Gerado em __HOJE__</span>
+    <span class="badge" id="badge-count">__TOTAL__ servidores</span>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <div class="filter-search-wrap">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" class="filter-search" id="searchInput" placeholder="Buscar por nome ou cargo…" />
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <div class="filter-group">
+      <span class="filter-label">Órgão</span>
+      <div class="filter-chips" id="orgChips">
+        <button class="chip chip-active" data-org="all">Todos</button>
+      </div>
+    </div>
+
+    <div class="filter-divider"></div>
+
+    <div class="filter-group">
+      <span class="filter-label">Desconto</span>
+      <div class="filter-chips">
+        <button class="chip chip-active" id="tier-all"  onclick="setTier('all')">Todos</button>
+        <button class="chip chip-red"   id="tier-high" onclick="setTier('high')">Alto ≥30%</button>
+        <button class="chip chip-amber" id="tier-mid"  onclick="setTier('mid')">Médio 20–30%</button>
+        <button class="chip chip-green" id="tier-low"  onclick="setTier('low')">Baixo &lt;20%</button>
+      </div>
+    </div>
+
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="btn-export" onclick="exportCSV()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Exportar CSV
+      </button>
+      <button class="btn-clear" onclick="clearAllFilters()">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <p class="section-title">Visão Geral</p>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <span class="kpi-label">Servidores</span>
+      <span class="kpi-value" id="kpi-total">—</span>
+      <span class="kpi-sub"   id="kpi-total-sub">—</span>
+    </div>
+    <div class="kpi-card kpi-sky">
+      <span class="kpi-label">Folha Líquida Total</span>
+      <span class="kpi-value" id="kpi-folha">—</span>
+      <span class="kpi-sub">Soma das remunerações líquidas</span>
+    </div>
+    <div class="kpi-card kpi-emerald">
+      <span class="kpi-label">Média Líquida</span>
+      <span class="kpi-value" id="kpi-media">—</span>
+      <span class="kpi-sub"   id="kpi-media-sub">—</span>
+    </div>
+    <div class="kpi-card kpi-amber">
+      <span class="kpi-label">Maior Remuneração</span>
+      <span class="kpi-value" id="kpi-maior">—</span>
+      <span class="kpi-sub"   id="kpi-menor-sub">—</span>
+    </div>
+  </div>
+
+  <p class="section-title">Detalhamento</p>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Servidores Encontrados</span>
+      <div class="card-actions">
+        <span class="card-hint" id="table-count"></span>
+        <label style="font-size:11px;color:#94A3B8;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Ordenar</label>
+        <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+          <option value="liquida-desc">Líquida ↓</option>
+          <option value="liquida-asc">Líquida ↑</option>
+          <option value="pct-desc">% Desc. ↓</option>
+          <option value="pct-asc">% Desc. ↑</option>
+          <option value="nome-asc">Nome A–Z</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nome</th><th>Órgão</th><th>Cargo</th>
+            <th>Rem. Fixa</th><th>Eventuais</th>
+            <th>Rem. Líquida</th><th>Desconto</th><th>% Desc.</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <p>Nenhum servidor encontrado com os filtros selecionados.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="section-title">Análise de Remuneração</p>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Ranking por Remuneração Líquida</span>
+      </div>
+      <div id="chart-bar" style="min-height:320px"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Distribuição por Órgão</span>
+      </div>
+      <div id="chart-donut" style="min-height:300px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Remuneração Fixa vs Líquida por Servidor</span>
+      <span class="card-hint">Barras agrupadas</span>
+    </div>
+    <div id="chart-grouped" style="min-height:320px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Ranking de Descontos</span>
+      <span class="card-hint">
+        <span style="color:#10B981;font-weight:700">■</span> &lt;20%&nbsp;&nbsp;
+        <span style="color:#F59E0B;font-weight:700">■</span> 20–30%&nbsp;&nbsp;
+        <span style="color:#EF4444;font-weight:700">■</span> ≥30%
+      </span>
+    </div>
+    <div id="chart-desc" style="min-height:320px"></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Dados extraídos do
+  <a href="https://www.transparencia.ms.gov.br" target="_blank" rel="noopener noreferrer">
+    Portal da Transparência do Mato Grosso do Sul
+  </a>
+</div>
+
+<script>
+__JS__
+</script>
+</body>
+</html>
