@@ -51,7 +51,7 @@ async def selecionar_orgao_se_necessario(page, orgao, last_organ):
     if orgao:
         try:
             await page.click("div#s2id_Orgao .select2-choice")
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)
             await page.locator(
                 ".select2-drop-active .select2-input, input.select2-input:visible"
             ).first.fill(orgao)
@@ -61,7 +61,7 @@ async def selecionar_orgao_se_necessario(page, orgao, last_organ):
             await page.locator(
                 f'.select2-result-label:has-text("{orgao}")'
             ).first.click()
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)
         except Exception as e:
             print(f"  -> Aviso: Não foi possível selecionar o órgão '{orgao}'. {e}")
 
@@ -104,7 +104,7 @@ async def worker(browser, orgao, itens):
             el.dispatchEvent(new Event('input', {bubbles: true}));
             el.dispatchEvent(new Event('change', {bubbles: true}));
         }""", nome_busca)
-        await page.wait_for_timeout(200)
+        await page.wait_for_timeout(1500)
         await page.click(".btnConsultar")
 
         encontrou = False
