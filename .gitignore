@@ -3,3 +3,5 @@ output/
 __pycache__/
 *.pyc
 .env
+.playwright-mcp
+.claude
