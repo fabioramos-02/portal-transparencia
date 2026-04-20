@@ -94,47 +94,61 @@ async def worker(browser, orgao, itens):
 
         last_organ = await selecionar_orgao_se_necessario(page, orgao_busca, last_organ)
 
-        await page.fill("input#Nome", "")
-        await page.fill("input#Nome", nome_busca)
+        # Limpar e preencher campo Nome via AngularJS (trigger input + change)
+        await page.evaluate("""(nome) => {
+            const el = document.querySelector('input#Nome');
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype, 'value'
+            ).set;
+            nativeInputValueSetter.call(el, nome);
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+        }""", nome_busca)
+        await page.wait_for_timeout(200)
         await page.click(".btnConsultar")
 
+        encontrou = False
         try:
-            await page.wait_for_timeout(3000)
-            rows = page.query_selector_all("table tbody tr")
-            rows = await rows
+            # Aguarda Angular processar e a tabela ser populada (max 15s)
+            await page.wait_for_load_state("networkidle", timeout=15000)
+        except Exception:
+            # Fallback: espera fixa se networkidle não for atingido
+            await page.wait_for_timeout(6000)
 
-            encontrou = False
+        try:
+            rows = await page.query_selector_all("table tbody tr")
+
             for row in rows:
                 cols = await row.query_selector_all("td")
-                if len(cols) >= 8:
-                    orgao_enc = (await cols[2].inner_text()).strip()
-                    nome_enc = (await cols[3].inner_text()).strip()
-                    cargo = (await cols[4].inner_text()).strip()
-                    rem_fixa = (await cols[5].inner_text()).strip()
-                    rem_eventual = (await cols[6].inner_text()).strip()
-                    rem_liquida = (await cols[7].inner_text()).strip()
+                if len(cols) < 8:
+                    continue
 
-                    if orgao_busca and orgao_busca.upper() not in orgao_enc.upper():
-                        continue
+                orgao_enc    = (await cols[2].inner_text()).strip()
+                nome_enc     = (await cols[3].inner_text()).strip()
+                cargo        = (await cols[4].inner_text()).strip()
+                rem_fixa     = (await cols[5].inner_text()).strip()
+                rem_eventual = (await cols[6].inner_text()).strip()
+                rem_liquida  = (await cols[7].inner_text()).strip()
 
-                    encontrou = True
-                    resultados.append(
-                        {
-                            "Nome Buscado": nome_busca,
-                            "Órgão Buscado": orgao_busca,
-                            "Órgão Encontrado": orgao_enc,
-                            "Nome Encontrado": nome_enc,
-                            "Cargo": cargo,
-                            "Remuneração Fixa": rem_fixa,
-                            "Remunerações Eventuais": rem_eventual,
-                            "Remuneração Líquida": rem_liquida,
-                        }
-                    )
+                # Filtro por órgão: o portal já filtra via dropdown,
+                # mas confirma pelo texto da coluna como segurança
+                if orgao_busca and orgao_busca.upper() not in orgao_enc.upper():
+                    continue
+
+                encontrou = True
+                resultados.append({
+                    "Nome Buscado":          nome_busca,
+                    "Órgão Buscado":         orgao_busca,
+                    "Órgão Encontrado":      orgao_enc,
+                    "Nome Encontrado":       nome_enc,
+                    "Cargo":                 cargo,
+                    "Remuneração Fixa":      rem_fixa,
+                    "Remunerações Eventuais": rem_eventual,
+                    "Remuneração Líquida":   rem_liquida,
+                })
 
             if not encontrou:
-                print(
-                    f"  -> Nenhum resultado para {nome_busca} no órgão '{orgao_busca}'."
-                )
+                print(f"  -> Nenhum resultado para {nome_busca} no órgão '{orgao_busca}'.")
             else:
                 print(f"  -> Dados capturados para {nome_busca}!")
 
