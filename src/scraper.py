@@ -109,8 +109,10 @@ async def worker(browser, orgao, itens):
 
         encontrou = False
         try:
-            # Aguarda Angular processar e a tabela ser populada (max 15s)
+            # Aguarda a requisição HTTP terminar
             await page.wait_for_load_state("networkidle", timeout=15000)
+            # Aguarda o $digest do AngularJS atualizar o DOM com os novos dados
+            await page.wait_for_timeout(800)
         except Exception:
             # Fallback: espera fixa se networkidle não for atingido
             await page.wait_for_timeout(6000)
